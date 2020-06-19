@@ -14,6 +14,7 @@ export default class CreateTodo extends Component {
         this.onChangeTodoDescription = this.onChangeTodoDescription.bind(this);
         this.onChangeTodoResponsible = this.onChangeTodoResponsible.bind(this);
         this.onChangeTodoPriority = this.onChangeTodoPriority.bind(this);
+        this.onChangeTodoMessage = this.onChangeTodoMessage.bind(this);
         this.onSubmit = this.onSubmit.bind(this);
     }
 
