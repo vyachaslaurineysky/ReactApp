@@ -1,12 +1,14 @@
 import React, { Component } from 'react';
+import AWS from 'aws-sdk';
 
-export default class CreateTodo extends Component {    
+export default class CreateTodo extends Component {
     constructor(props) {
         super(props);
         this.state = {
             todo_description: '',
             todo_responsible: '',
             todo_priority: '',
+            todo_message: '',
             todo_completed: false
         }
         this.onChangeTodoDescription = this.onChangeTodoDescription.bind(this);
@@ -72,6 +74,15 @@ export default class CreateTodo extends Component {
                             <label className="form-check-label">High</label>
                         </div>
                     </div>
+                    <div className="form-group">
+                        <label>Message: </label>
+                        <input 
+                                type="text" 
+                                className="form-control"
+                                value={this.state.todo_message}
+                                onChange={this.onChangeTodoMessage}
+                                />
+                    </div>
 
                     <div className="form-group">
                         <input type="submit" value="Create Todo" className="btn btn-primary" />
@@ -99,9 +110,51 @@ export default class CreateTodo extends Component {
         });
     }
 
+    onChangeTodoMessage(e) {
+        this.setState({
+            todo_message: e.target.value
+        });
+    }
+
     onSubmit(e) {
         e.preventDefault();
-        
+        AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+            IdentityPoolId: 'eu-west-2:beda143a-1088-45f8-80bf-8f89601226ae',
+        });
+        AWS.config.update({region: 'eu-west-2'});
+        var sqs = new AWS.SQS({apiVersion: '2012-11-05'});
+
+        var params = {
+            // Remove DelaySeconds parameter and value for FIFO queues
+           DelaySeconds: 10,
+           MessageAttributes: {
+             "Description": {
+               DataType: "String",
+               StringValue: this.state.todo_description
+             },
+             "Priority": {
+               DataType: "String",
+               StringValue: this.state.todo_priority
+             },
+             "Responsible": {
+                DataType: "String",
+                StringValue: this.state.todo_responsible
+              }
+           },
+           MessageBody: this.state.todo_message,
+           // MessageDeduplicationId: "TheWhistler",  // Required for FIFO queues
+           // MessageGroupId: "Group1",  // Required for FIFO queues
+           QueueUrl: "https://sqs.eu-west-2.amazonaws.com/549313309072/reactTest"
+         };
+           
+         sqs.sendMessage(params, function(err, data) {
+            if (err) {
+              console.log("Error", err);
+            } else {
+              console.log("Success", data.MessageId);
+            }
+          });
+
         console.log(`Form submitted:`);
         console.log(`Todo Description: ${this.state.todo_description}`);
         console.log(`Todo Responsible: ${this.state.todo_responsible}`);
